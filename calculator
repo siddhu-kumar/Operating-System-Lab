@@ -1,0 +1,81 @@
+#include<stdio.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<string.h>
+#include<sys/wait.h>
+#include<stdlib.h>
+
+int function(char *buffer)
+{
+char op;
+int flag=0;
+int u=0,v=0;
+for(int i=0;i<strlen(buffer)-1;i++)
+{
+if(buffer[i]=='+'|| buffer[i]=='-'||buffer[i]=='*'||buffer[i]=='/')
+{
+flag=1;
+op=buffer[i];
+}
+else if(flag==0)
+u=u*10+(buffer[i]-'0');
+else if(flag==1)
+v=v*10+(buffer[i]-'0');
+}
+switch(op)
+{
+case '+':
+	u=u+v;
+	break;
+case '-':
+	u=u-v;
+	break;
+case '*':
+	u=u*v;
+	break;
+case '/':
+	u=u/v;
+	break;
+default:
+	return '\0';
+}
+
+for(int i=0;i<10;i++)
+{
+buffer[i]='\0';
+}
+sprintf(buffer,"%d",u);
+return strlen(buffer);
+}
+
+int main() {
+int result;
+int fd1[2],fd2[2],n,m;
+char buffer[100];
+pipe(fd1);
+pipe(fd2);
+pid_t p;
+p=fork();
+if(p>0)
+{
+close(fd1[0]);//close read allow write
+close(fd2[1]);//close write allow read
+write(1,"Enter your input:",17);// write on console
+n=read(0,buffer,100);//read on console
+write(fd1[1],buffer,n);//write on buffer 
+wait(NULL);
+m=read(fd2[0],buffer,100);//read from buffer memory
+write(1,"Answer is:",10);//write on console
+write(1,buffer,m);
+}
+else
+{
+close(fd1[1]);//close write allow read
+close(fd2[0]);//close read allow write
+n=read(fd1[0],buffer,100);//read from buffer
+write(1,"Equation is:",12);//write on console
+write(1,buffer,n);
+m=function(buffer);//call calculator function
+write(fd2[1],buffer,m);//write on buffer
+}
+}
